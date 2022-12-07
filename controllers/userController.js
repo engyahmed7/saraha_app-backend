@@ -1,5 +1,7 @@
 const Message = require("../models/message");
 const User = require("../models/user");
+const Post = require("../models/post");
+const Comment = require("../models/comment");
 
 exports.updateUser = async (req, res) => {
     const {
@@ -120,4 +122,66 @@ exports.updateFilePdf = async (req, res) => {
             updated
         })
     }
+};
+
+exports.AddPost = async (req, res) => {
+    let {
+        title,
+        description
+    } = req.body;
+    let id = req.user._id;
+
+    let addedPost = await Post.insertMany({
+        title,
+        description,
+        userId: id
+    })
+
+    if (addedPost) {
+        res.json({
+            message: "added",
+            addedPost
+        })
+    } else {
+        res.json({
+            message: "sorry, can't add your post"
+        })
+    }
+};
+
+exports.AddComment = async (req, res) => {
+    let {
+        title
+    } = req.body;
+    let postId = req.params.id;
+
+    const addedComment = await Comment.insertMany({
+        title,
+        userId: req.user._id
+    })
+
+    console.log(addedComment[0]._id)
+
+    const addCommentToPost = await Post.findOneAndUpdate({
+        _id: postId
+    }, {
+        $push: {
+            commentsIds: addedComment[0]._id
+        }
+    }, {
+        new: true
+    })
+
+    res.json({
+        message: "Done",
+        addCommentToPost
+    })
+};
+
+exports.getAllPosts = async (req, res) => {
+    const posts = await Post.find({}).populate('commentsIds').populate('userId')
+    res.json({
+        message: "all posts",
+        posts
+    })
 };
